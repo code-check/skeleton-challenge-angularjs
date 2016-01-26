@@ -1,8 +1,14 @@
 ﻿var jsdom = require("jsdom"),
     fs = require("fs"),
     reporter = require("./reporter.js"),
+    jasmineSrc = "jasmine/jasmine.js",
     scripts = [
-        "jasmine/jasmine.js", // Should ALWAY be the first script
+        "https://ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js",
+        "https://code.angularjs.org/1.3.15/angular-mocks.js",
+        // Sources
+        "app.js",
+        // Specs
+        "specs/password-controller.spec.js"
     ]; // This array should include source first, then specs.
 
 before(function (done) {
@@ -11,7 +17,7 @@ before(function (done) {
         html: '',
         resourceLoader: function (resource, callback) {
             // Grab files from the web
-            if (resource.url.pathname.startsWith("http"))
+            if (resource.url.href.startsWith("http"))
                 return resource.defaultFetch(callback);
 
             // Grab files locally
@@ -29,7 +35,23 @@ before(function (done) {
 function boot(done) {
     var tasks = [];
 
-    // Fill task buffer
+    // Push Jasmine script as task
+    tasks.push({
+        execute: function () {
+            var script = window.document.createElement("script");
+            script.src = jasmineSrc;
+            script.index = tasks.indexOf(this);
+            script.onload = function () {
+                // Create Jasmine instance
+                createJasmine();
+                // Execute next task
+                tasks[this.index + 1].execute();
+            };
+            window.document.body.appendChild(script);
+        }
+    });
+
+    // Fill task buffer with the scripts
     for (var i = 0; i < scripts.length; i++) {
         tasks.push({
             script: scripts[i],
@@ -43,21 +65,14 @@ function boot(done) {
                 };
                 window.document.body.appendChild(script);
             }
-        });
-
-        if (i == 0)
-            tasks.push({
-                execute: function () {
-                    // Create Jasmine instance
-                    createJasmine();
-                    // Execute next task
-                    tasks[tasks.indexOf(this) + 1].execute();
-                }
-            });
+        });            
     }
-    // Push the final task
+    // Push the done trigger
     tasks.push({
-        execute: done
+        execute: function () {
+            global.jasmine.env.execute();
+            done();
+        }
     });
 
     // Trigger the first task in the tree
