@@ -1,0 +1,14 @@
+﻿<!DOCTYPE html>
+<html ng-app="app">
+<head>
+    <title></title>
+	<meta charset="utf-8" />
+</head>
+<body ng-controller="PasswordController">
+    <input type="text" ng-model="password" ng-change="grade()" />
+    <b>{{ strength }}</b>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.9/angular.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
